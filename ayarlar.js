@@ -4,7 +4,7 @@
 // "Project URL" değerini kopyala.
 // ============================================================
 
-const SUPABASE_URL = "https://cjctbnrgvsopnvdpqmjv.supabase.co/rest/v1/"; // <-- BURAYI DEĞİŞTİR
+const SUPABASE_URL = "https://cjctbnrgvsopnvdpqmjv.supabase.co";
 
 // Project Settings > Data API > Project API keys > "anon public" değerini buraya yapıştır
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNqY3RibnJndnNvcG52ZHBxbWp2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODYwODEyMDgsImV4cCI6MjEwMTY1NzIwOH0.lvwm5FXdRXW6jkaZZcU6JWxWfIJWbhyqeZXmYZ9cmjo"; // <-- BURAYI DA DEĞİŞTİR
