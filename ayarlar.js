@@ -4,9 +4,28 @@
 // "Project URL" değerini kopyala.
 // ============================================================
 
-const SUPABASE_URL = "https://cjctbnrgvsopnvdpqmjv.supabase.co/rest/v1/"; // <-- BURAYI DEĞİŞTİR
+const SUPABASE_URL = "https://SENIN-PROJE-KODUN.supabase.co"; // <-- BURAYI DEĞİŞTİR
+
+// Project Settings > Data API > Project API keys > "anon public" değerini buraya yapıştır
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNqY3RibnJndnNvcG52ZHBxbWp2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODYwODEyMDgsImV4cCI6MjEwMTY1NzIwOH0.lvwm5FXdRXW6jkaZZcU6JWxWfIJWbhyqeZXmYZ9cmjo"; // <-- BURAYI DA DEĞİŞTİR
 
 const FONKSIYON_URL = (isim) => `${SUPABASE_URL}/functions/v1/${isim}`;
+
+// Tüm sayfalarda ortak kullanılan API çağrı fonksiyonu.
+// apikey + Authorization başlıkları, Supabase'in "Missing authorization header"
+// hatasını önlemek için gerekli (fonksiyonlara JWT doğrulaması sorulmadan ulaşmamızı sağlar).
+async function api(fonksiyon, govde) {
+  const yanit = await fetch(FONKSIYON_URL(fonksiyon), {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "apikey": SUPABASE_ANON_KEY,
+      "Authorization": `Bearer ${SUPABASE_ANON_KEY}`,
+    },
+    body: JSON.stringify(govde),
+  });
+  return await yanit.json();
+}
 
 // Fotoğrafı sıkıştırıp base64'e çeviren yardımcı fonksiyon
 // (büyük fotoğrafları küçültür, isteği hızlandırır ve boyut sınırını aşmayı önler)

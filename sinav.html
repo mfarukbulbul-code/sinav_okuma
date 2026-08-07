@@ -40,15 +40,6 @@
 const urlParametreleri = new URLSearchParams(window.location.search);
 const linkKodu = urlParametreleri.get("kod");
 
-async function api(fonksiyon, govde) {
-  const yanit = await fetch(FONKSIYON_URL(fonksiyon), {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(govde),
-  });
-  return await yanit.json();
-}
-
 async function sinavBilgisiniYukle() {
   if (!linkKodu) {
     document.getElementById("sinavBasligi").textContent = "Geçersiz sınav linki.";

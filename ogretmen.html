@@ -62,15 +62,6 @@
 let dersler = [];
 let sonSinavLinki = "";
 
-async function api(fonksiyon, govde) {
-  const yanit = await fetch(FONKSIYON_URL(fonksiyon), {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(govde),
-  });
-  return await yanit.json();
-}
-
 async function dersleriYukle() {
   const sonuc = await api("admin-api", { action: "ders_listele" });
   dersler = sonuc.dersler || [];
