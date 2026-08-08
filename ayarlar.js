@@ -4,7 +4,7 @@
 // "Project URL" değerini kopyala.
 // ============================================================
 
-const SUPABASE_URL = "https://SENIN-PROJE-KODUN.supabase.co"; // <-- BURAYI DEĞİŞTİR
+const SUPABASE_URL = "https://cjctbnrgvsopnvdpqmjv.supabase.co"; // <-- BURAYI DEĞİŞTİR
 
 // Project Settings > Data API > Project API keys > "anon public" değerini buraya yapıştır
 const SUPABASE_ANON_KEY = "SENIN-ANON-ANAHTARIN"; // <-- BURAYI DA DEĞİŞTİR
