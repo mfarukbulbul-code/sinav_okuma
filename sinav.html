@@ -21,8 +21,8 @@
     <label for="testCevaplari">Test sorularının cevapları varsa (örn: 1:A, 2:C, 3:B)</label>
     <textarea id="testCevaplari" rows="2" placeholder="1:A, 2:C, 3:B ..."></textarea>
 
-    <label for="kagitFotolari">Yazılı / el yazısı kağıdının fotoğrafı (varsa, birden fazla sayfa olabilir)</label>
-    <input type="file" id="kagitFotolari" accept="image/*" multiple capture="environment">
+    <label>Yazılı / el yazısı kağıdının fotoğrafı (arkalı önlü / çok sayfa: "Fotoğraf Ekle"ye tekrar tekrar bas)</label>
+    <div id="kagitFotoAlani"></div>
 
     <button onclick="gonder()" id="gonderBtn">Cevaplarımı Gönder</button>
     <div id="gonderMesaj"></div>
@@ -39,6 +39,7 @@
 <script>
 const urlParametreleri = new URLSearchParams(window.location.search);
 const linkKodu = urlParametreleri.get("kod");
+const kagitToplayici = fotografToplayiciOlustur(document.getElementById("kagitFotoAlani"));
 
 async function sinavBilgisiniYukle() {
   if (!linkKodu) {
@@ -59,7 +60,7 @@ async function gonder() {
   const adSoyad = document.getElementById("adSoyad").value.trim();
   const ogrenciNo = document.getElementById("ogrenciNo").value.trim();
   const testCevaplari = document.getElementById("testCevaplari").value.trim();
-  const dosyalar = document.getElementById("kagitFotolari").files;
+  const dosyalar = kagitToplayici.dosyalar;
   const btn = document.getElementById("gonderBtn");
   const mesajAlani = document.getElementById("gonderMesaj");
 
@@ -73,7 +74,7 @@ async function gonder() {
   mesajAlani.innerHTML = `<div class="mesaj basarili">Değerlendiriliyor, lütfen bekle...</div>`;
 
   try {
-    const gorseller = dosyalar.length > 0 ? await birdenFazlaDosyayiBase64eCevir(Array.from(dosyalar)) : [];
+    const gorseller = dosyalar.length > 0 ? await birdenFazlaDosyayiBase64eCevir(dosyalar) : [];
     const sonuc = await api("sinav-degerlendir", {
       link_kodu: linkKodu,
       ogrenci_ad_soyad: adSoyad,
@@ -88,12 +89,15 @@ async function gonder() {
       document.getElementById("sonucKarti").style.display = "block";
       document.getElementById("toplamPuan").textContent = sonuc.sonuc.puan;
 
-      let tabloHtml = `<tr><th>Soru</th><th>Cevabın</th><th>Durum</th></tr>`;
+      let tabloHtml = `<tr><th>Soru</th><th>Cevabın</th><th>Puan</th><th>Durum</th></tr>`;
       for (const s of sonuc.sonuc.soru_detaylari || []) {
         const durum = s.dogru_mu
           ? `<span class="dogru">Doğru</span>`
-          : `<span class="yanlis">Yanlış${s.aciklama ? " — " + s.aciklama : ""}</span>`;
-        tabloHtml += `<tr><td>${s.soru_no}</td><td>${s.ogrenci_cevabi ?? "-"}</td><td>${durum}</td></tr>`;
+          : `<span class="yanlis">${s.aciklama ? s.aciklama : "Eksik/Yanlış"}</span>`;
+        const puanGosterimi = (s.kazanilan_puan !== undefined && s.soru_puani !== undefined)
+          ? `${s.kazanilan_puan} / ${s.soru_puani}`
+          : "-";
+        tabloHtml += `<tr><td>${s.soru_no}</td><td>${s.ogrenci_cevabi ?? "-"}</td><td>${puanGosterimi}</td><td>${durum}</td></tr>`;
       }
       document.getElementById("soruTablosu").innerHTML = tabloHtml;
     } else {

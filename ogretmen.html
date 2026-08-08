@@ -11,6 +11,16 @@
   <h1>Sınav Değerlendirme Sistemi</h1>
   <p class="aciklama">Öğretmen paneli</p>
 
+  <!-- GEMINI API ANAHTARI -->
+  <div class="kart">
+    <h2>Gemini API Anahtarın</h2>
+    <p class="aciklama">Her öğretmen kendi ücretsiz anahtarını kullanır. Bir kere gir, bu tarayıcıda saklanır.</p>
+    <label for="geminiAnahtarKutusu">API Anahtarı</label>
+    <input type="text" id="geminiAnahtarKutusu" placeholder="AIza... ile başlayan anahtarını yapıştır">
+    <button onclick="anahtariKaydet()">Kaydet</button>
+    <div id="anahtarMesaj"></div>
+  </div>
+
   <!-- DERS EKLEME / SEÇME -->
   <div class="kart">
     <h2>1. Ders</h2>
@@ -29,8 +39,8 @@
     <label for="sinavAdi">Sınav adı</label>
     <input type="text" id="sinavAdi" placeholder="Örn: 1. Dönem 2. Yazılı">
 
-    <label for="cevapAnahtariFotolari">Cevap anahtarı fotoğrafları (birden fazla sayfa seçebilirsin)</label>
-    <input type="file" id="cevapAnahtariFotolari" accept="image/*" multiple capture="environment">
+    <label>Cevap anahtarı fotoğrafları (arkalı önlü / çok sayfa: "Fotoğraf Ekle"ye tekrar tekrar bas)</label>
+    <div id="cevapAnahtariFotoAlani"></div>
 
     <button onclick="sinavOlustur()" id="sinavOlusturBtn">Cevap Anahtarını Oku ve Sınavı Oluştur</button>
     <div id="sinavMesaj"></div>
@@ -55,57 +65,196 @@
     <button onclick="genelOrtalamaGetir()">Genel Ortalamayı Getir</button>
     <div id="genelOrtalamaAlani"></div>
   </div>
+
+  <!-- TOPLU KAĞIT OKUTMA -->
+  <div class="kart">
+    <h2>5. Toplu Kağıt Okutma (Kotayı Korur)</h2>
+    <p class="aciklama">Tüm sınıfın kağıtlarını TEK istekte gönderir. Gemini her öğrencinin adını/no'sunu kağıttan kendisi okur, sen yazmana gerek yok.</p>
+
+    <label for="topluDersSecimi">Ders</label>
+    <select id="topluDersSecimi"></select>
+
+    <label for="topluSinavSecimi">Sınav</label>
+    <select id="topluSinavSecimi"></select>
+
+    <div id="ogrenciBloklariAlani"></div>
+    <button class="ikincil" onclick="ogrenciBlokEkle()">+ Öğrenci Ekle</button>
+    <button onclick="topluDegerlendir()" id="topluBtn">Tümünü Gönder ve Değerlendir</button>
+    <div id="topluMesaj"></div>
+    <div id="topluSonucAlani"></div>
+  </div>
 </div>
 
 <script src="ayarlar.js"></script>
 <script>
 let dersler = [];
 let sonSinavLinki = "";
+const cevapAnahtariToplayici = fotografToplayiciOlustur(document.getElementById("cevapAnahtariFotoAlani"));
+
+function anahtariYukle() {
+  const kayitli = localStorage.getItem("gemini_api_key") || "";
+  document.getElementById("geminiAnahtarKutusu").value = kayitli;
+}
+
+function anahtariKaydet() {
+  const deger = document.getElementById("geminiAnahtarKutusu").value.trim();
+  if (!deger) { document.getElementById("anahtarMesaj").innerHTML = `<div class="mesaj hata">Anahtar boş olamaz.</div>`; return; }
+  localStorage.setItem("gemini_api_key", deger);
+  document.getElementById("anahtarMesaj").innerHTML = `<div class="mesaj basarili">Kaydedildi. Bu tarayıcıda saklanacak.</div>`;
+}
+
+function kayitliAnahtar() {
+  return localStorage.getItem("gemini_api_key") || "";
+}
+
+anahtariYukle();
 
 async function dersleriYukle() {
   const sonuc = await api("admin-api", { action: "ders_listele" });
   dersler = sonuc.dersler || [];
   const secim = document.getElementById("dersSecimi");
   secim.innerHTML = dersler.map(d => `<option value="${d.id}">${d.ders_adi}</option>`).join("");
+
+  const topluSecim = document.getElementById("topluDersSecimi");
+  topluSecim.innerHTML = secim.innerHTML;
+  await topluSinavlariYukle();
+}
+
+async function topluSinavlariYukle() {
+  const dersId = document.getElementById("topluDersSecimi").value;
+  const sinavSecim = document.getElementById("topluSinavSecimi");
+  if (!dersId) { sinavSecim.innerHTML = ""; return; }
+  const sonuc = await api("admin-api", { action: "sinav_listele", ders_id: dersId });
+  const sinavlar = sonuc.sinavlar || [];
+  sinavSecim.innerHTML = sinavlar.map(s => `<option value="${s.link_kodu}">${s.sinav_adi}</option>`).join("");
+}
+document.getElementById("topluDersSecimi").addEventListener("change", topluSinavlariYukle);
+
+// ---- Öğrenci blokları (toplu okutma) ----
+let ogrenciBlokSayaci = 0;
+const ogrenciBloklari = {}; // { blokId: { toplayici } }
+
+function ogrenciBlokEkle() {
+  ogrenciBlokSayaci++;
+  const blokId = `blok${ogrenciBlokSayaci}`;
+  const alan = document.getElementById("ogrenciBloklariAlani");
+
+  const blokDiv = document.createElement("div");
+  blokDiv.className = "ogrenci-blok";
+  blokDiv.id = blokId;
+  blokDiv.innerHTML = `
+    <button class="sil-blok" onclick="ogrenciBlokSil('${blokId}')">Sil</button>
+    <h4>Öğrenci ${ogrenciBlokSayaci} (adı kağıttan otomatik okunacak)</h4>
+    <div class="foto-alan-${blokId}"></div>
+  `;
+  alan.appendChild(blokDiv);
+
+  const toplayici = fotografToplayiciOlustur(blokDiv.querySelector(`.foto-alan-${blokId}`));
+  ogrenciBloklari[blokId] = { toplayici };
+}
+
+function ogrenciBlokSil(blokId) {
+  document.getElementById(blokId)?.remove();
+  delete ogrenciBloklari[blokId];
+}
+
+async function topluDegerlendir() {
+  const linkKodu = document.getElementById("topluSinavSecimi").value;
+  const btn = document.getElementById("topluBtn");
+  const mesajAlani = document.getElementById("topluMesaj");
+  const sonucAlani = document.getElementById("topluSonucAlani");
+
+  if (!linkKodu) { mesajAlani.innerHTML = `<div class="mesaj hata">Önce bir sınav seç.</div>`; return; }
+
+  const blokIdler = Object.keys(ogrenciBloklari);
+  if (blokIdler.length === 0) { mesajAlani.innerHTML = `<div class="mesaj hata">En az bir öğrenci ekle.</div>`; return; }
+
+  for (const bid of blokIdler) {
+    if (ogrenciBloklari[bid].toplayici.dosyalar.length === 0) {
+      mesajAlani.innerHTML = `<div class="mesaj hata">Her öğrenci bloğunda en az bir fotoğraf olmalı.</div>`;
+      return;
+    }
+  }
+
+  btn.disabled = true;
+  mesajAlani.innerHTML = `<div class="mesaj basarili">${blokIdler.length} öğrenci tek istekte değerlendiriliyor, bu biraz sürebilir...</div>`;
+  sonucAlani.innerHTML = "";
+
+  try {
+    const ogrenciler = [];
+    for (const bid of blokIdler) {
+      const gorseller = await birdenFazlaDosyayiBase64eCevir(ogrenciBloklari[bid].toplayici.dosyalar);
+      ogrenciler.push({ gorseller });
+    }
+
+    const sonuc = await api("toplu-degerlendir", { link_kodu: linkKodu, ogrenciler });
+
+    if (sonuc.basarili) {
+      mesajAlani.innerHTML = `<div class="mesaj basarili">${sonuc.sonuclar.length} öğrenci değerlendirildi.</div>`;
+      let html = `<table><tr><th>Öğrenci</th><th>Puan</th><th>Durum</th></tr>`;
+      for (const s of sonuc.sonuclar) {
+        html += `<tr><td>${s.ad_soyad ?? "Okunamadı"}</td><td>${s.puan ?? "-"}</td><td>${s.hata ? `<span class="yanlis">${s.hata}</span>` : `<span class="dogru">Kaydedildi</span>`}</td></tr>`;
+      }
+      html += `</table>`;
+      sonucAlani.innerHTML = html;
+
+      for (const bid of blokIdler) ogrenciBlokSil(bid);
+    } else {
+      mesajAlani.innerHTML = `<div class="mesaj hata">${sonuc.hata}</div>`;
+    }
+  } catch (e) {
+    mesajAlani.innerHTML = `<div class="mesaj hata">Hata: ${e}</div>`;
+  } finally {
+    btn.disabled = false;
+  }
 }
 
 async function dersEkle() {
   const ad = document.getElementById("yeniDersAdi").value.trim();
   if (!ad) return;
-  const sonuc = await api("admin-api", { action: "ders_ekle", ders_adi: ad });
   const mesajAlani = document.getElementById("dersMesaj");
-  if (sonuc.basarili) {
-    mesajAlani.innerHTML = `<div class="mesaj basarili">Ders eklendi.</div>`;
-    document.getElementById("yeniDersAdi").value = "";
-    await dersleriYukle();
-  } else {
-    mesajAlani.innerHTML = `<div class="mesaj hata">${sonuc.hata}</div>`;
+  try {
+    const sonuc = await api("admin-api", { action: "ders_ekle", ders_adi: ad });
+    if (sonuc.basarili) {
+      mesajAlani.innerHTML = `<div class="mesaj basarili">Ders eklendi.</div>`;
+      document.getElementById("yeniDersAdi").value = "";
+      await dersleriYukle();
+    } else {
+      mesajAlani.innerHTML = `<div class="mesaj hata">${sonuc.hata || JSON.stringify(sonuc)}</div>`;
+    }
+  } catch (e) {
+    mesajAlani.innerHTML = `<div class="mesaj hata">Beklenmeyen hata: ${e.message || e}</div>`;
   }
 }
 
 async function sinavOlustur() {
   const dersId = document.getElementById("dersSecimi").value;
   const sinavAdi = document.getElementById("sinavAdi").value.trim();
-  const dosyalar = document.getElementById("cevapAnahtariFotolari").files;
+  const dosyalar = cevapAnahtariToplayici.dosyalar;
   const btn = document.getElementById("sinavOlusturBtn");
   const mesajAlani = document.getElementById("sinavMesaj");
 
   if (!dersId) { mesajAlani.innerHTML = `<div class="mesaj hata">Önce bir ders seç.</div>`; return; }
   if (!sinavAdi) { mesajAlani.innerHTML = `<div class="mesaj hata">Sınav adı gir.</div>`; return; }
-  if (dosyalar.length === 0) { mesajAlani.innerHTML = `<div class="mesaj hata">En az bir fotoğraf seç.</div>`; return; }
+  if (dosyalar.length === 0) { mesajAlani.innerHTML = `<div class="mesaj hata">En az bir fotoğraf ekle.</div>`; return; }
+  if (!kayitliAnahtar()) { mesajAlani.innerHTML = `<div class="mesaj hata">Önce yukarıdan Gemini API anahtarını kaydet.</div>`; return; }
 
   btn.disabled = true;
   mesajAlani.innerHTML = `<div class="mesaj basarili">Cevap anahtarı okunuyor, biraz sürebilir...</div>`;
 
   try {
-    const gorseller = await birdenFazlaDosyayiBase64eCevir(Array.from(dosyalar));
-    const sonuc = await api("cevap-anahtari-oku", { ders_id: dersId, sinav_adi: sinavAdi, gorseller });
+    const gorseller = await birdenFazlaDosyayiBase64eCevir(dosyalar);
+    const sonuc = await api("cevap-anahtari-oku", {
+      ders_id: dersId, sinav_adi: sinavAdi, gorseller, gemini_api_key: kayitliAnahtar(),
+    });
 
     if (sonuc.basarili) {
       mesajAlani.innerHTML = `<div class="mesaj basarili">Sınav oluşturuldu!</div>`;
       sonSinavLinki = `${window.location.origin}${window.location.pathname.replace('ogretmen.html','')}sinav.html?kod=${sonuc.sinav.link_kodu}`;
       document.getElementById("sinavLinki").textContent = sonSinavLinki;
       document.getElementById("linkAlani").style.display = "block";
+      cevapAnahtariToplayici.temizle();
+      await topluSinavlariYukle();
     } else {
       mesajAlani.innerHTML = `<div class="mesaj hata">${sonuc.hata}</div>`;
     }

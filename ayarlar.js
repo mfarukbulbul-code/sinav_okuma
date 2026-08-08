@@ -4,10 +4,10 @@
 // "Project URL" değerini kopyala.
 // ============================================================
 
-const SUPABASE_URL = "https://cjctbnrgvsopnvdpqmjv.supabase.co";
+const SUPABASE_URL = "https://SENIN-PROJE-KODUN.supabase.co"; // <-- BURAYI DEĞİŞTİR
 
 // Project Settings > Data API > Project API keys > "anon public" değerini buraya yapıştır
-const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNqY3RibnJndnNvcG52ZHBxbWp2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODYwODEyMDgsImV4cCI6MjEwMTY1NzIwOH0.lvwm5FXdRXW6jkaZZcU6JWxWfIJWbhyqeZXmYZ9cmjo"; // <-- BURAYI DA DEĞİŞTİR
+const SUPABASE_ANON_KEY = "SENIN-ANON-ANAHTARIN"; // <-- BURAYI DA DEĞİŞTİR
 
 const FONKSIYON_URL = (isim) => `${SUPABASE_URL}/functions/v1/${isim}`;
 
@@ -64,4 +64,78 @@ async function birdenFazlaDosyayiBase64eCevir(dosyaListesi) {
     sonuclar.push(await dosyayiBase64eCevir(dosya));
   }
   return sonuclar;
+}
+
+// ============================================================
+// FOTOĞRAF TOPLAYICI BİLEŞENİ
+// "Fotoğraf Çek" her tıklamada bir fotoğrafı listeye EKLER (üzerine
+// yazmaz) — böylece arkalı önlü / çok sayfalı kağıtları art arda
+// çekip biriktirebilirsin. "Galeriden Ekle" ise tek seferde birden
+// fazla dosya seçmene izin verir.
+// Kullanımı: const toplayici = fotografToplayiciOlustur(document.getElementById("alan"));
+//            ... gönderirken: toplayici.dosyalar (File[] dizisi)
+// ============================================================
+function fotografToplayiciOlustur(kapsayiciElementi) {
+  let dosyalar = [];
+
+  const satir = document.createElement("div");
+  satir.className = "foto-toplayici";
+
+  const kameraInput = document.createElement("input");
+  kameraInput.type = "file";
+  kameraInput.accept = "image/*";
+  kameraInput.capture = "environment";
+  kameraInput.style.display = "none";
+
+  const galeriInput = document.createElement("input");
+  galeriInput.type = "file";
+  galeriInput.accept = "image/*";
+  galeriInput.multiple = true;
+  galeriInput.style.display = "none";
+
+  const kameraBtn = document.createElement("button");
+  kameraBtn.type = "button";
+  kameraBtn.textContent = "📷 Fotoğraf Ekle";
+  kameraBtn.onclick = () => kameraInput.click();
+
+  const galeriBtn = document.createElement("button");
+  galeriBtn.type = "button";
+  galeriBtn.className = "ikincil";
+  galeriBtn.textContent = "🖼️ Galeriden Ekle";
+  galeriBtn.onclick = () => galeriInput.click();
+
+  const thumbAlan = document.createElement("div");
+  thumbAlan.className = "thumb-alan";
+
+  function listeyiGuncelle() {
+    thumbAlan.innerHTML = dosyalar
+      .map((d, i) => `<span class="thumb-item">📄 ${i + 1} <a href="#" data-i="${i}">✕</a></span>`)
+      .join(" ");
+    thumbAlan.querySelectorAll("a").forEach((a) => {
+      a.onclick = (e) => {
+        e.preventDefault();
+        dosyalar.splice(Number(a.dataset.i), 1);
+        listeyiGuncelle();
+      };
+    });
+  }
+
+  kameraInput.onchange = () => {
+    if (kameraInput.files[0]) dosyalar.push(kameraInput.files[0]);
+    kameraInput.value = "";
+    listeyiGuncelle();
+  };
+  galeriInput.onchange = () => {
+    dosyalar.push(...Array.from(galeriInput.files));
+    galeriInput.value = "";
+    listeyiGuncelle();
+  };
+
+  satir.append(kameraBtn, galeriBtn, kameraInput, galeriInput, thumbAlan);
+  kapsayiciElementi.appendChild(satir);
+
+  return {
+    get dosyalar() { return dosyalar; },
+    temizle() { dosyalar = []; listeyiGuncelle(); },
+  };
 }
