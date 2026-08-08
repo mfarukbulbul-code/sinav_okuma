@@ -1,6 +1,6 @@
 // ============================================================
 // AYARLAR — Supabase proje bilgilerinle doldur
-// Supabase Dashboard > Project Settings > Data API bölümünden
+// Supabase Dashboard > Project Settings > Data API bölümünde
 // "Project URL" değerini kopyala.
 // ============================================================
 
