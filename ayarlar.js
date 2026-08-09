@@ -1,13 +1,13 @@
 // ============================================================
 // AYARLAR — Supabase proje bilgilerinle doldur
-// Supabase Dashboard > Project Settings > Data API bölümünde
+// Supabase Dashboard > Project Settings > Data API bölümünden
 // "Project URL" değerini kopyala.
 // ============================================================
 
-const SUPABASE_URL = "https://cjctbnrgvsopnvdpqmjv.supabase.co"; // <-- BURAYI DEĞİŞTİR
+const SUPABASE_URL = "https://SENIN-PROJE-KODUN.supabase.co"; // <-- BURAYI DEĞİŞTİR
 
 // Project Settings > Data API > Project API keys > "anon public" değerini buraya yapıştır
-const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNqY3RibnJndnNvcG52ZHBxbWp2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODYwODEyMDgsImV4cCI6MjEwMTY1NzIwOH0.lvwm5FXdRXW6jkaZZcU6JWxWfIJWbhyqeZXmYZ9cmjo"; // <-- BURAYI DA DEĞİŞTİR
+const SUPABASE_ANON_KEY = "SENIN-ANON-ANAHTARIN"; // <-- BURAYI DA DEĞİŞTİR
 
 const FONKSIYON_URL = (isim) => `${SUPABASE_URL}/functions/v1/${isim}`;
 
@@ -64,6 +64,30 @@ async function birdenFazlaDosyayiBase64eCevir(dosyaListesi) {
     sonuclar.push(await dosyayiBase64eCevir(dosya));
   }
   return sonuclar;
+}
+
+// ============================================================
+// YARDIM BALONU — ⓘ ikonuna tıklayınca açılıp kapanan açıklama kutusu
+// ============================================================
+function toggleYardim(id) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.style.display = el.style.display === "none" ? "block" : "none";
+}
+
+// Tüm sayfalarda aynı API anahtarı yardım metni kullanılır
+function apiAnahtariYardimHtml() {
+  return `
+    <b>Ücretsiz API anahtarını şöyle alırsın:</b>
+    <ol>
+      <li><a href="https://aistudio.google.com/apikey" target="_blank">aistudio.google.com/apikey</a> adresine git</li>
+      <li>Google hesabınla giriş yap</li>
+      <li>"Create API key" (veya "API anahtarı oluştur") butonuna tıkla</li>
+      <li>Oluşan anahtarı kopyala</li>
+      <li>Buradaki kutuya yapıştır</li>
+    </ol>
+    <p>Bu anahtar tamamen ücretsizdir, kendi kotan için kullanılır.</p>
+  `;
 }
 
 // ============================================================

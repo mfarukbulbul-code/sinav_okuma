@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Öğretmen Paneli - Sınav Değerlendirme</title>
 <link rel="stylesheet" href="stil.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 </head>
 <body>
 <div class="kapsayici">
@@ -13,17 +14,21 @@
 
   <!-- GEMINI API ANAHTARI -->
   <div class="kart">
-    <h2>Gemini API Anahtarın</h2>
-    <p class="aciklama">Her öğretmen kendi ücretsiz anahtarını kullanır. Bir kere gir, bu tarayıcıda saklanır.</p>
-    <label for="geminiAnahtarKutusu">API Anahtarı</label>
-    <input type="text" id="geminiAnahtarKutusu" placeholder="AIza... ile başlayan anahtarını yapıştır">
-    <button onclick="anahtariKaydet()">Kaydet</button>
+    <h2>API Anahtarın <button type="button" class="info-btn" onclick="toggleYardim('anahtarYardim')">ⓘ</button></h2>
+    <div id="anahtarYardim" class="yardim-kutusu" style="display:none;"></div>
+    <label for="geminiAnahtarKutusu">Anahtarını buraya yapıştır</label>
+    <input type="text" id="geminiAnahtarKutusu" placeholder="Anahtarını buraya yapıştır">
+    <div class="buton-satiri">
+      <button onclick="anahtariKaydet()">Kaydet</button>
+      <button class="ikincil" type="button" onclick="window.open('https://aistudio.google.com/apikey','_blank')">Anahtar Al</button>
+    </div>
     <div id="anahtarMesaj"></div>
   </div>
 
   <!-- DERS EKLEME / SEÇME -->
   <div class="kart">
     <h2>1. Ders</h2>
+    <p class="aciklama">Derslerini burada oluştur. Sınavlarını birazdan bir derse bağlayacaksın.</p>
     <label for="dersSecimi">Mevcut ders</label>
     <select id="dersSecimi"></select>
 
@@ -35,7 +40,8 @@
 
   <!-- SINAV OLUŞTURMA -->
   <div class="kart">
-    <h2>2. Yeni Sınav Oluştur (Cevap Anahtarı)</h2>
+    <h2>2. Yeni Sınav Oluştur</h2>
+    <p class="aciklama">Cevap anahtarının fotoğrafını yükle, sistem okuyup bu sınavı otomatik oluştursun.</p>
     <label for="sinavAdi">Sınav adı</label>
     <input type="text" id="sinavAdi" placeholder="Örn: 1. Dönem 2. Yazılı">
 
@@ -46,15 +52,16 @@
     <div id="sinavMesaj"></div>
 
     <div id="linkAlani" style="display:none; margin-top:14px;">
-      <label>Öğrencilere paylaşacağın link:</label>
+      <p class="aciklama">Bu sınavın okuma linkini öğrencilerinize buradan gönderebilirsiniz. Öğrenci linke tıklayıp kağıdının fotoğrafını yükleyecek, sonucunu anında görecek.</p>
       <div class="link-kutusu" id="sinavLinki"></div>
-      <button class="ikincil" onclick="whatsappPaylas()">WhatsApp'tan Paylaş</button>
+      <button class="ikincil" onclick="whatsappPaylas()">WhatsApp'tan Gönder</button>
     </div>
   </div>
 
   <!-- SINAV SONUÇLARI -->
   <div class="kart">
     <h2>3. Seçili Dersin Sonuçları</h2>
+    <p class="aciklama">Yukarıda seçtiğin dersteki tüm sınav sonuçlarını ve öğrenci ortalamalarını burada görürsün.</p>
     <button onclick="sonuclariGetir()">Sonuçları Yenile</button>
     <div id="sonuclarAlani"></div>
   </div>
@@ -62,14 +69,15 @@
   <!-- GENEL ORTALAMA -->
   <div class="kart">
     <h2>4. Tüm Öğrencilerin Genel Ortalaması</h2>
+    <p class="aciklama">Öğrencilerin tüm derslerdeki genel başarı ortalamasını gösterir.</p>
     <button onclick="genelOrtalamaGetir()">Genel Ortalamayı Getir</button>
     <div id="genelOrtalamaAlani"></div>
   </div>
 
   <!-- TOPLU KAĞIT OKUTMA -->
   <div class="kart">
-    <h2>5. Toplu Kağıt Okutma (Kotayı Korur)</h2>
-    <p class="aciklama">Tüm sınıfın kağıtlarını TEK istekte gönderir. Gemini her öğrencinin adını/no'sunu kağıttan kendisi okur, sen yazmana gerek yok.</p>
+    <h2>5. Toplu Kağıt Okutma</h2>
+    <p class="aciklama">Tüm sınıfın kağıtlarını tek seferde okut. Her öğrenci için ayrı bir kağıt grubu ekle, adını yazmana gerek yok — sistem kağıttan kendisi okuyacak.</p>
 
     <label for="topluDersSecimi">Ders</label>
     <select id="topluDersSecimi"></select>
@@ -82,11 +90,14 @@
     <button onclick="topluDegerlendir()" id="topluBtn">Tümünü Gönder ve Değerlendir</button>
     <div id="topluMesaj"></div>
     <div id="topluSonucAlani"></div>
+    <button class="ikincil" id="excelIndirBtn" style="display:none;" onclick="excelIndir()">📥 Sonuçları Excel Olarak İndir</button>
   </div>
 </div>
 
 <script src="ayarlar.js"></script>
 <script>
+document.getElementById("anahtarYardim").innerHTML = apiAnahtariYardimHtml();
+
 let dersler = [];
 let sonSinavLinki = "";
 const cevapAnahtariToplayici = fotografToplayiciOlustur(document.getElementById("cevapAnahtariFotoAlani"));
@@ -133,6 +144,7 @@ document.getElementById("topluDersSecimi").addEventListener("change", topluSinav
 // ---- Öğrenci blokları (toplu okutma) ----
 let ogrenciBlokSayaci = 0;
 const ogrenciBloklari = {}; // { blokId: { toplayici } }
+let sonTopluSonuclar = [];
 
 function ogrenciBlokEkle() {
   ogrenciBlokSayaci++;
@@ -191,12 +203,14 @@ async function topluDegerlendir() {
 
     if (sonuc.basarili) {
       mesajAlani.innerHTML = `<div class="mesaj basarili">${sonuc.sonuclar.length} öğrenci değerlendirildi.</div>`;
+      sonTopluSonuclar = sonuc.sonuclar;
       let html = `<table><tr><th>Öğrenci</th><th>Puan</th><th>Durum</th></tr>`;
       for (const s of sonuc.sonuclar) {
         html += `<tr><td>${s.ad_soyad ?? "Okunamadı"}</td><td>${s.puan ?? "-"}</td><td>${s.hata ? `<span class="yanlis">${s.hata}</span>` : `<span class="dogru">Kaydedildi</span>`}</td></tr>`;
       }
       html += `</table>`;
       sonucAlani.innerHTML = html;
+      document.getElementById("excelIndirBtn").style.display = "inline-block";
 
       for (const bid of blokIdler) ogrenciBlokSil(bid);
     } else {
@@ -207,6 +221,33 @@ async function topluDegerlendir() {
   } finally {
     btn.disabled = false;
   }
+}
+
+function excelIndir() {
+  const satirlar = sonTopluSonuclar.map(s => {
+    const sorular = s.sorular || [];
+    const dogruSayisi = sorular.filter(q => q.dogru_mu).length;
+    const yanlisSayisi = sorular.length - dogruSayisi;
+    const kayipNedenleri = sorular
+      .filter(q => !q.dogru_mu)
+      .map(q => `Soru ${q.soru_no}: ${q.aciklama || "-"}`)
+      .join(" | ");
+    return {
+      "Öğrenci": s.ad_soyad ?? "Okunamadı",
+      "Doğru Sayısı": dogruSayisi,
+      "Yanlış/Eksik Sayısı": yanlisSayisi,
+      "Toplam Puan": s.puan ?? "-",
+      "Puan Kaybı Nedenleri": kayipNedenleri || "-",
+    };
+  });
+
+  const sayfa = XLSX.utils.json_to_sheet(satirlar);
+  sayfa["!cols"] = [{ wch: 22 }, { wch: 12 }, { wch: 16 }, { wch: 12 }, { wch: 60 }];
+  const calismaKitabi = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(calismaKitabi, sayfa, "Sonuçlar");
+
+  const tarih = new Date().toISOString().slice(0, 10);
+  XLSX.writeFile(calismaKitabi, `sinav_sonuclari_${tarih}.xlsx`);
 }
 
 async function dersEkle() {

@@ -114,3 +114,35 @@ th { color: #666; font-weight: 600; }
 }
 .ogrenci-blok h4 { margin: 0 0 6px; font-size: 14px; color: #333; }
 .ogrenci-blok .sil-blok { background: #c62828; padding: 6px 10px; font-size: 12px; float: right; margin-top: -34px; }
+
+.info-btn {
+  background: #e0e0e0;
+  color: #444;
+  border: none;
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  font-size: 12px;
+  line-height: 20px;
+  margin: 0 0 0 6px;
+  vertical-align: middle;
+  cursor: pointer;
+}
+.info-btn:hover { background: #cfcfcf; }
+
+.yardim-kutusu {
+  background: #fff8e1;
+  border: 1px solid #ffe0a3;
+  border-radius: 6px;
+  padding: 10px 14px;
+  margin: 8px 0;
+  font-size: 13px;
+  color: #5a4a1a;
+}
+.yardim-kutusu ol { margin: 6px 0; padding-left: 20px; }
+.yardim-kutusu a { color: #1565c0; }
+
+.buton-satiri { display: flex; gap: 8px; align-items: center; margin-top: 6px; }
+.buton-satiri input { flex: 1; }
+.buton-satiri button { margin-top: 0; white-space: nowrap; }

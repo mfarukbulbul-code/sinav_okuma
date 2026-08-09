@@ -21,6 +21,13 @@
     <label for="testCevaplari">Test sorularının cevapları varsa (örn: 1:A, 2:C, 3:B)</label>
     <textarea id="testCevaplari" rows="2" placeholder="1:A, 2:C, 3:B ..."></textarea>
 
+    <label for="ogrenciApiAnahtari">Kendi anahtarını kullanmak istersen (opsiyonel) <button type="button" class="info-btn" onclick="toggleYardim('ogrYardim')">ⓘ</button></label>
+    <div id="ogrYardim" class="yardim-kutusu" style="display:none;"></div>
+    <div class="buton-satiri">
+      <input type="text" id="ogrenciApiAnahtari" placeholder="Boş bırakabilirsin">
+      <button class="ikincil" type="button" onclick="window.open('https://aistudio.google.com/apikey','_blank')">Anahtar Al</button>
+    </div>
+
     <label>Yazılı / el yazısı kağıdının fotoğrafı (arkalı önlü / çok sayfa: "Fotoğraf Ekle"ye tekrar tekrar bas)</label>
     <div id="kagitFotoAlani"></div>
 
@@ -37,6 +44,8 @@
 
 <script src="ayarlar.js"></script>
 <script>
+document.getElementById("ogrYardim").innerHTML = apiAnahtariYardimHtml();
+
 const urlParametreleri = new URLSearchParams(window.location.search);
 const linkKodu = urlParametreleri.get("kod");
 const kagitToplayici = fotografToplayiciOlustur(document.getElementById("kagitFotoAlani"));
@@ -81,6 +90,7 @@ async function gonder() {
       ogrenci_no: ogrenciNo || null,
       test_cevaplari: testCevaplari || null,
       gorseller,
+      gemini_api_key: document.getElementById("ogrenciApiAnahtari").value.trim() || null,
     });
 
     if (sonuc.basarili) {
