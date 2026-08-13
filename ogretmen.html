@@ -13,27 +13,33 @@
 
   <!-- GİRİŞ / KAYIT EKRANI -->
   <div id="girisEkrani">
-    <div class="kart">
+    <div class="kart" id="girisKarti">
       <h2>Giriş Yap</h2>
       <p class="aciklama">Kendi hesabınla giriş yap, sadece kendi derslerini ve öğrencilerini görürsün.</p>
       <label for="girisEmail">E-posta</label>
       <input type="text" id="girisEmail" placeholder="ornek@okul.com">
       <label for="girisSifre">4 Haneli Şifre</label>
-      <input type="text" id="girisSifre" maxlength="4" inputmode="numeric" placeholder="••••">
+      <input type="password" id="girisSifre" maxlength="4" inputmode="numeric" placeholder="••••">
       <button onclick="girisYap()">Giriş Yap</button>
       <div id="girisMesaj"></div>
+      <p class="aciklama" style="margin-top:14px;">
+        Hesabın yok mu? <a href="#" onclick="kayitEkraniniGoster(); return false;">Kayıt Ol</a>
+      </p>
     </div>
 
-    <div class="kart">
-      <h2>Hesabın Yok mu? Kayıt Ol</h2>
+    <div class="kart" id="kayitKarti" style="display:none;">
+      <h2>Kayıt Ol</h2>
       <label for="kayitAdSoyad">Adın Soyadın</label>
       <input type="text" id="kayitAdSoyad" placeholder="Örn: Ayşe Yılmaz">
       <label for="kayitEmail">E-posta</label>
       <input type="text" id="kayitEmail" placeholder="ornek@okul.com">
       <label for="kayitSifre">4 Haneli Şifre Belirle</label>
-      <input type="text" id="kayitSifre" maxlength="4" inputmode="numeric" placeholder="••••">
+      <input type="text" id="kayitSifre" maxlength="4" inputmode="numeric" placeholder="0000">
       <button class="ikincil" onclick="kayitOl()">Kayıt Ol ve Giriş Yap</button>
       <div id="kayitMesaj"></div>
+      <p class="aciklama" style="margin-top:14px;">
+        Zaten hesabın var mı? <a href="#" onclick="girisKartiniGoster(); return false;">Giriş Yap</a>
+      </p>
     </div>
   </div>
 
@@ -127,7 +133,7 @@
   </div><!-- /anaEkran -->
 </div>
 
-<script src="ayarlar.js"></script>
+<script src="ayarlar.js?v=2026081302"></script>
 <script>
 document.getElementById("anahtarYardim").innerHTML = apiAnahtariYardimHtml();
 
@@ -147,6 +153,17 @@ function girisliOgretmen() {
 function girisEkraniniGoster() {
   document.getElementById("girisEkrani").style.display = "block";
   document.getElementById("anaEkran").style.display = "none";
+  girisKartiniGoster();
+}
+
+function girisKartiniGoster() {
+  document.getElementById("girisKarti").style.display = "block";
+  document.getElementById("kayitKarti").style.display = "none";
+}
+
+function kayitEkraniniGoster() {
+  document.getElementById("girisKarti").style.display = "none";
+  document.getElementById("kayitKarti").style.display = "block";
 }
 
 function anaEkraniGoster(ogretmen) {
