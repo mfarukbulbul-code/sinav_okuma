@@ -10,7 +10,39 @@
 <body>
 <div class="kapsayici">
   <h1>Sınav Değerlendirme Sistemi</h1>
-  <p class="aciklama">Öğretmen paneli</p>
+
+  <!-- GİRİŞ / KAYIT EKRANI -->
+  <div id="girisEkrani">
+    <div class="kart">
+      <h2>Giriş Yap</h2>
+      <p class="aciklama">Kendi hesabınla giriş yap, sadece kendi derslerini ve öğrencilerini görürsün.</p>
+      <label for="girisEmail">E-posta</label>
+      <input type="text" id="girisEmail" placeholder="ornek@okul.com">
+      <label for="girisSifre">4 Haneli Şifre</label>
+      <input type="text" id="girisSifre" maxlength="4" inputmode="numeric" placeholder="••••">
+      <button onclick="girisYap()">Giriş Yap</button>
+      <div id="girisMesaj"></div>
+    </div>
+
+    <div class="kart">
+      <h2>Hesabın Yok mu? Kayıt Ol</h2>
+      <label for="kayitAdSoyad">Adın Soyadın</label>
+      <input type="text" id="kayitAdSoyad" placeholder="Örn: Ayşe Yılmaz">
+      <label for="kayitEmail">E-posta</label>
+      <input type="text" id="kayitEmail" placeholder="ornek@okul.com">
+      <label for="kayitSifre">4 Haneli Şifre Belirle</label>
+      <input type="text" id="kayitSifre" maxlength="4" inputmode="numeric" placeholder="••••">
+      <button class="ikincil" onclick="kayitOl()">Kayıt Ol ve Giriş Yap</button>
+      <div id="kayitMesaj"></div>
+    </div>
+  </div>
+
+  <!-- ANA EKRAN (giriş yapınca görünür) -->
+  <div id="anaEkran" style="display:none;">
+    <div class="kart" style="display:flex; justify-content:space-between; align-items:center;">
+      <span id="hosgeldinYazisi" style="font-weight:600;"></span>
+      <button class="ikincil" onclick="cikisYap()" style="margin-top:0;">Çıkış Yap</button>
+    </div>
 
   <!-- GEMINI API ANAHTARI -->
   <div class="kart">
@@ -92,6 +124,7 @@
     <div id="topluSonucAlani"></div>
     <button class="ikincil" id="excelIndirBtn" style="display:none;" onclick="excelIndir()">📥 Sonuçları Excel Olarak İndir</button>
   </div>
+  </div><!-- /anaEkran -->
 </div>
 
 <script src="ayarlar.js"></script>
@@ -101,6 +134,71 @@ document.getElementById("anahtarYardim").innerHTML = apiAnahtariYardimHtml();
 let dersler = [];
 let sonSinavLinki = "";
 const cevapAnahtariToplayici = fotografToplayiciOlustur(document.getElementById("cevapAnahtariFotoAlani"));
+
+// ============================================================
+// GİRİŞ / KAYIT / ÇIKIŞ
+// ============================================================
+function girisliOgretmen() {
+  const id = localStorage.getItem("ogretmen_id");
+  const ad = localStorage.getItem("ogretmen_adi");
+  return id ? { id, ad_soyad: ad } : null;
+}
+
+function girisEkraniniGoster() {
+  document.getElementById("girisEkrani").style.display = "block";
+  document.getElementById("anaEkran").style.display = "none";
+}
+
+function anaEkraniGoster(ogretmen) {
+  document.getElementById("girisEkrani").style.display = "none";
+  document.getElementById("anaEkran").style.display = "block";
+  document.getElementById("hosgeldinYazisi").textContent = `Hoş geldin, ${ogretmen.ad_soyad}`;
+  anahtariYukle();
+  dersleriYukle();
+}
+
+async function girisYap() {
+  const email = document.getElementById("girisEmail").value.trim();
+  const sifre = document.getElementById("girisSifre").value.trim();
+  const mesajAlani = document.getElementById("girisMesaj");
+  if (!email || !/^\d{4}$/.test(sifre)) {
+    mesajAlani.innerHTML = `<div class="mesaj hata">E-posta gir ve 4 haneli şifreni yaz.</div>`;
+    return;
+  }
+  const sonuc = await api("ogretmen-auth", { action: "giris_yap", email, sifre });
+  if (sonuc.basarili) {
+    localStorage.setItem("ogretmen_id", sonuc.ogretmen.id);
+    localStorage.setItem("ogretmen_adi", sonuc.ogretmen.ad_soyad);
+    anaEkraniGoster(sonuc.ogretmen);
+  } else {
+    mesajAlani.innerHTML = `<div class="mesaj hata">${sonuc.hata}</div>`;
+  }
+}
+
+async function kayitOl() {
+  const ad_soyad = document.getElementById("kayitAdSoyad").value.trim();
+  const email = document.getElementById("kayitEmail").value.trim();
+  const sifre = document.getElementById("kayitSifre").value.trim();
+  const mesajAlani = document.getElementById("kayitMesaj");
+  if (!ad_soyad || !email || !/^\d{4}$/.test(sifre)) {
+    mesajAlani.innerHTML = `<div class="mesaj hata">Tüm alanları doldur, şifre 4 haneli rakam olmalı.</div>`;
+    return;
+  }
+  const sonuc = await api("ogretmen-auth", { action: "kayit_ol", ad_soyad, email, sifre });
+  if (sonuc.basarili) {
+    localStorage.setItem("ogretmen_id", sonuc.ogretmen.id);
+    localStorage.setItem("ogretmen_adi", sonuc.ogretmen.ad_soyad);
+    anaEkraniGoster(sonuc.ogretmen);
+  } else {
+    mesajAlani.innerHTML = `<div class="mesaj hata">${sonuc.hata}</div>`;
+  }
+}
+
+function cikisYap() {
+  localStorage.removeItem("ogretmen_id");
+  localStorage.removeItem("ogretmen_adi");
+  girisEkraniniGoster();
+}
 
 function anahtariYukle() {
   const kayitli = localStorage.getItem("gemini_api_key") || "";
@@ -121,7 +219,9 @@ function kayitliAnahtar() {
 anahtariYukle();
 
 async function dersleriYukle() {
-  const sonuc = await api("admin-api", { action: "ders_listele" });
+  const ogretmen = girisliOgretmen();
+  if (!ogretmen) return;
+  const sonuc = await api("admin-api", { action: "ders_listele", ogretmen_id: ogretmen.id });
   dersler = sonuc.dersler || [];
   const secim = document.getElementById("dersSecimi");
   secim.innerHTML = dersler.map(d => `<option value="${d.id}">${d.ders_adi}</option>`).join("");
@@ -255,7 +355,7 @@ async function dersEkle() {
   if (!ad) return;
   const mesajAlani = document.getElementById("dersMesaj");
   try {
-    const sonuc = await api("admin-api", { action: "ders_ekle", ders_adi: ad });
+    const sonuc = await api("admin-api", { action: "ders_ekle", ders_adi: ad, ogretmen_id: girisliOgretmen()?.id });
     if (sonuc.basarili) {
       mesajAlani.innerHTML = `<div class="mesaj basarili">Ders eklendi.</div>`;
       document.getElementById("yeniDersAdi").value = "";
@@ -337,7 +437,7 @@ async function sonuclariGetir() {
 }
 
 async function genelOrtalamaGetir() {
-  const sonuc = await api("admin-api", { action: "genel_ortalama_getir" });
+  const sonuc = await api("admin-api", { action: "genel_ortalama_getir", ogretmen_id: girisliOgretmen()?.id });
   const alan = document.getElementById("genelOrtalamaAlani");
   if (!sonuc.basarili) { alan.innerHTML = `<div class="mesaj hata">${sonuc.hata}</div>`; return; }
 
@@ -349,7 +449,12 @@ async function genelOrtalamaGetir() {
   alan.innerHTML = html;
 }
 
-dersleriYukle();
+const girisKontrol = girisliOgretmen();
+if (girisKontrol) {
+  anaEkraniGoster(girisKontrol);
+} else {
+  girisEkraniniGoster();
+}
 </script>
 </body>
 </html>
