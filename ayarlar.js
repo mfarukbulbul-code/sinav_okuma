@@ -4,10 +4,10 @@
 // "Project URL" değerini kopyala.
 // ============================================================
 
-const SUPABASE_URL = "https://cjctbnrgvsopnvdpqmjv.supabase.co";// <-- BURAYI DEĞİŞTİR
+const SUPABASE_URL = "https://SENIN-PROJE-KODUN.supabase.co"; // <-- BURAYI DEĞİŞTİR
 
 // Project Settings > Data API > Project API keys > "anon public" değerini buraya yapıştır
-const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNqY3RibnJndnNvcG52ZHBxbWp2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODYwODEyMDgsImV4cCI6MjEwMTY1NzIwOH0.lvwm5FXdRXW6jkaZZcU6JWxWfIJWbhyqeZXmYZ9cmjo"; // <-- BURAYI DA DEĞİŞTİR
+const SUPABASE_ANON_KEY = "SENIN-ANON-ANAHTARIN"; // <-- BURAYI DA DEĞİŞTİR
 
 const FONKSIYON_URL = (isim) => `${SUPABASE_URL}/functions/v1/${isim}`;
 
@@ -15,21 +15,39 @@ const FONKSIYON_URL = (isim) => `${SUPABASE_URL}/functions/v1/${isim}`;
 // apikey + Authorization başlıkları, Supabase'in "Missing authorization header"
 // hatasını önlemek için gerekli (fonksiyonlara JWT doğrulaması sorulmadan ulaşmamızı sağlar).
 async function api(fonksiyon, govde) {
-  const yanit = await fetch(FONKSIYON_URL(fonksiyon), {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "apikey": SUPABASE_ANON_KEY,
-      "Authorization": `Bearer ${SUPABASE_ANON_KEY}`,
-    },
-    body: JSON.stringify(govde),
-  });
-  return await yanit.json();
+  try {
+    const yanit = await fetch(FONKSIYON_URL(fonksiyon), {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "apikey": SUPABASE_ANON_KEY,
+        "Authorization": `Bearer ${SUPABASE_ANON_KEY}`,
+      },
+      body: JSON.stringify(govde),
+    });
+
+    // Sunucu bir hata sayfası/boş yanıt döndürdüyse JSON çözümlemesi patlar,
+    // bu yüzden metin olarak alıp güvenli şekilde çözümlüyoruz.
+    const metin = await yanit.text();
+    try {
+      return JSON.parse(metin);
+    } catch {
+      return {
+        hata: "Sunucu beklenen yanıtı vermedi (işlem çok uzun sürmüş olabilir). Lütfen tekrar dene.",
+      };
+    }
+  } catch (e) {
+    // Ağ kopması / zaman aşımı / internet yok durumları
+    return {
+      hata: "Sunucuya ulaşılamadı. İnternet bağlantını kontrol et ve tekrar dene. " +
+            "Fotoğraf sayısı çoksa, daha az fotoğrafla denemek işlemi hızlandırır.",
+    };
+  }
 }
 
 // Fotoğrafı sıkıştırıp base64'e çeviren yardımcı fonksiyon
 // (büyük fotoğrafları küçültür, isteği hızlandırır ve boyut sınırını aşmayı önler)
-function dosyayiBase64eCevir(dosya, maxGenislik = 1600, kalite = 0.85) {
+function dosyayiBase64eCevir(dosya, maxGenislik = 1200, kalite = 0.75) {
   return new Promise((resolve, reject) => {
     const okuyucu = new FileReader();
     okuyucu.onload = (e) => {

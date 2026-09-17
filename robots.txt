@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://mfarukbulbul-code.github.io/sinav_okuma/sitemap.xml
